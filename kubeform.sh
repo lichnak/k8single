@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xeuo pipefail
 
 IPMARKER="PUBLICIP"
 NODE_IP=$1
@@ -74,7 +75,9 @@ max=10
 for (( i=0; i <= $max; ++i ))
 do
    printf "."
+   set +e
    status=$(curl -s -w %{http_code} "http:/127.0.0.1:8080/version")
+   set -e
    if [ "${status}" != "000" ]; then
       break
       apiup=true
