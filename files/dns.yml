@@ -93,6 +93,11 @@ spec:
         args:
         # command = "/kube2sky"
         - --domain=cluster.local
+        - --kubecfg-file=/etc/kubernetes/ssl/kube.conf
+        volumeMounts:
+        - name: kubernetes-etc
+          mountPath: /etc/kubernetes/ssl
+          readOnly: true
       - name: skydns
         image: gcr.io/google_containers/skydns:2015-10-13-8c72f8c
         resources:
@@ -133,4 +138,7 @@ spec:
       volumes:
       - name: etcd-storage
         emptyDir: {}
+      - name: kubernetes-etc
+        hostPath:
+          path: /etc/kubernetes/ssl
       dnsPolicy: Default

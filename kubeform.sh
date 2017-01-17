@@ -41,6 +41,9 @@ openssl x509 -req -in $KEYSDIR/admin.csr -CA $KEYSDIR/ca.pem -CAkey $KEYSDIR/ca-
 sudo cp $KEYSDIR/ca.pem /etc/kubernetes/ssl/
 sudo cp $KEYSDIR/apiserver.pem /etc/kubernetes/ssl/
 sudo cp $KEYSDIR/apiserver-key.pem /etc/kubernetes/ssl/
+sudo cp $KEYSDIR/admin-key.pem /etc/kubernetes/ssl/
+sudo cp $KEYSDIR/admin.pem /etc/kubernetes/ssl/
+sudo cp files/kube.conf /etc/kubernetes/ssl/
 
 sudo chmod 600 /etc/kubernetes/ssl/*-key.pem
 sudo chown root:root /etc/kubernetes/ssl/*-key.pem
