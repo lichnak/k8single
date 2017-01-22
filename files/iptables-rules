@@ -1,0 +1,13 @@
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+# Restrict to local access
+# etcd2
+-A INPUT -p tcp --source __PUBLICIP__/32 --dport 2379 -j ACCEPT
+-A INPUT -p tcp --source 127.0.0.0/8 -j ACCEPT
+-A INPUT -p tcp --dport 2379 -j DROP
+# k8s tools
+-A INPUT -p tcp --source __PUBLICIP__/32 --dport 10250:10255 -j ACCEPT
+-A INPUT -p tcp --dport 10250:10255 -j DROP
+COMMIT

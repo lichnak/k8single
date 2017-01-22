@@ -12,16 +12,17 @@ spec:
     - /hyperkube
     - apiserver
     - --bind-address=0.0.0.0
-    - --etcd-servers=http://PUBLICIP:2379
+    - --etcd-servers=http://__PUBLICIP__:2379
     - --allow-privileged=true
     - --service-cluster-ip-range=10.3.0.0/24
     - --secure-port=6443
-    - --advertise-address=PUBLICIP
+    - --advertise-address=__PUBLICIP__
     - --admission-control=NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota
-    - --tls-cert-file=/etc/kubernetes/ssl/apiserver.pem
-    - --tls-private-key-file=/etc/kubernetes/ssl/apiserver-key.pem
+    - --tls-cert-file=/etc/kubernetes/ssl/apiserver/apiserver.pem
+    - --tls-private-key-file=/etc/kubernetes/ssl/apiserver/apiserver-key.pem
     - --client-ca-file=/etc/kubernetes/ssl/ca.pem
-    - --service-account-key-file=/etc/kubernetes/ssl/apiserver-key.pem
+    - --basic-auth-file=/etc/kubernetes/ssl/apiserver/basicauth.pass
+    - --service-account-key-file=/etc/kubernetes/ssl/apiserver/apiserver-key.pem
     - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true
     ports:
     - containerPort: 6443
@@ -31,16 +32,22 @@ spec:
       hostPort: 8080
       name: local
     volumeMounts:
-    - mountPath: /etc/kubernetes/ssl
-      name: ssl-certs-kubernetes
+    - mountPath: /etc/kubernetes/ssl/apiserver
+      name: ssl-certs-apiserver
+      readOnly: true
+    - mountPath: /etc/kubernetes/ssl/ca.pem
+      name: k8s-ca
       readOnly: true
     - mountPath: /etc/ssl/certs
       name: ssl-certs-host
       readOnly: true
   volumes:
   - hostPath:
-      path: /etc/kubernetes/ssl
-    name: ssl-certs-kubernetes
+      path: /etc/kubernetes/ssl/apiserver
+    name: ssl-certs-apiserver
+  - hostPath:
+      path: /etc/kubernetes/ssl/ca.pem
+    name: k8s-ca
   - hostPath:
       path: /usr/share/ca-certificates
     name: ssl-certs-host
