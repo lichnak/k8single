@@ -3,7 +3,7 @@ set -xeuo pipefail
 
 NODE_IP=$1
 KEYSDIR="${HOME}/keys"
-K8VERSION="v1.5.1_coreos.0"
+K8VERSION="v1.6.1_coreos.0"
 NODE_DNS=${2:-}
 
 echo "Enabling iptables"
@@ -81,7 +81,10 @@ sudo find /etc/kubernetes/ssl/ -name '*-key.pem' -exec chown root:root {} \; -ex
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/options.env  > /tmp/options.env
 sudo mv /tmp/options.env  /etc/flannel/
-sudo cp  files/40-ExecStartPre-symlink.conf /etc/systemd/system/flanneld.service.d/
+sudo cp files/40-ExecStartPre-symlink.conf /etc/systemd/system/flanneld.service.d/
+sudo cp files/40-flannel.conf /etc/systemd/system/docker.service.d/40-flannel.conf
+sudo cp files/docker_opts_cni.env /etc/kubernetes/cni/docker_opts_cni.env
+sudo cp files/10-flannel.conf /etc/kubernetes/cni/net.d/10-flannel.conf
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/kubelet.service | sed "s/K8VERSION/${K8VERSION}/g" > /tmp/kubelet.service
 sudo mv /tmp/kubelet.service  /etc/systemd/system/
@@ -126,7 +129,7 @@ done
 set -x
 
 echo "install kubectl"
-curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.5.1/bin/linux/amd64/kubectl
+curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubectl
 sudo mv kubectl /opt/bin
 sudo chmod +x /opt/bin/kubectl
 

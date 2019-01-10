@@ -7,7 +7,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-apiserver
-    image: quay.io/coreos/hyperkube:v1.5.1_coreos.0
+    image: quay.io/coreos/hyperkube:v1.6.1_coreos.0
     command:
     - /hyperkube
     - apiserver
@@ -24,6 +24,13 @@ spec:
     - --basic-auth-file=/etc/kubernetes/ssl/apiserver/basicauth.pass
     - --service-account-key-file=/etc/kubernetes/ssl/apiserver/apiserver-key.pem
     - --runtime-config=extensions/v1beta1=true,extensions/v1beta1/networkpolicies=true
+    livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        port: 8080
+        path: /healthz
+      initialDelaySeconds: 15
+      timeoutSeconds: 15
     ports:
     - containerPort: 6443
       hostPort: 6443
