@@ -3,7 +3,7 @@ set -xeuo pipefail
 
 NODE_IP=$1
 KEYSDIR="${HOME}/keys"
-K8VERSION="v1.6.1_coreos.0"
+K8VERSION="v1.10.5_coreos.0"
 NODE_DNS=${2:-}
 
 echo "Enabling iptables"
@@ -96,6 +96,7 @@ sudo mv /tmp/kube-apiserver.yml /etc/kubernetes/manifests/
 sudo cp files/kube-proxy.yml /etc/kubernetes/manifests/
 sudo cp files/kube-controller-manager.yml /etc/kubernetes/manifests/
 sudo cp files/kube-scheduler.yml /etc/kubernetes/manifests/
+sudo cp files/master-kubeconfig.yml /etc/kubernetes/master-kubeconfig.yml
 
 sudo systemctl daemon-reload
 
@@ -130,7 +131,7 @@ done
 set -x
 
 echo "install kubectl"
-curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubectl
+curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.10.5/bin/linux/amd64/kubectl
 sudo mv kubectl /opt/bin
 sudo chmod +x /opt/bin/kubectl
 
