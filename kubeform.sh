@@ -14,23 +14,24 @@ sudo iptables-restore < /var/lib/iptables/rules-save
 
 echo "setting k8s in ${NODE_IP}"
 
-sudo mkdir -p /etc/systemd/system/etcd2.service.d
+sudo mkdir -p /etc/flannel/
+sudo mkdir -p /etc/kubernetes/cni/net.d
 sudo mkdir -p /etc/kubernetes/manifests
 sudo mkdir -p /etc/kubernetes/ssl/apiserver
-sudo mkdir -p /etc/kubernetes/ssl/kube-dns
 sudo mkdir -p /etc/kubernetes/ssl/kube-dashboard
-sudo mkdir -p /etc/flannel/
-sudo mkdir -p /etc/systemd/system/flanneld.service.d
+sudo mkdir -p /etc/kubernetes/ssl/kube-dns
 sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo mkdir -p /etc/systemd/system/etcd-member.service.d
+sudo mkdir -p /etc/systemd/system/flanneld.service.d
 sudo mkdir -p /opt/bin/
 mkdir -p ${KEYSDIR}
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/40-listen-address.conf  > /tmp/40-listen-address.conf 
-sudo mv /tmp/40-listen-address.conf  /etc/systemd/system/etcd2.service.d/40-listen-address.conf
+sudo mv /tmp/40-listen-address.conf  /etc/systemd/system/etcd-member.service.d/40-listen-address.conf
 
 echo "starting etcd..."
-sudo systemctl start etcd2
-sudo systemctl enable etcd2
+sudo systemctl start etcd-member
+sudo systemctl enable etcd-member
 
 
 echo "creating keys in ${KEYSDIR}"
@@ -139,6 +140,7 @@ kubectl config set-credentials default-admin --certificate-authority=${KEYSDIR}/
 
 kubectl config set-context default-system --cluster=default-cluster --user=default-admin
 kubectl config use-context default-system
+kubectl patch node ${NODE_IP} -p "{\"spec\":{\"unschedulable\":false}}"
 kubectl create -f files/kube-dns.yml
 kubectl create -f files/kube-dashboard.yml
 kubectl get pods --all-namespaces
