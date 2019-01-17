@@ -3,7 +3,7 @@ set -xeuo pipefail
 
 NODE_IP=$1
 KEYSDIR="${HOME}/keys"
-K8VERSION="v1.5.1_coreos.0"
+K8VERSION="v1.10.5_coreos.0"
 NODE_DNS=${2:-}
 
 echo "Enabling iptables"
@@ -14,23 +14,24 @@ sudo iptables-restore < /var/lib/iptables/rules-save
 
 echo "setting k8s in ${NODE_IP}"
 
-sudo mkdir -p /etc/systemd/system/etcd2.service.d
+sudo mkdir -p /etc/flannel/
+sudo mkdir -p /etc/kubernetes/cni/net.d
 sudo mkdir -p /etc/kubernetes/manifests
 sudo mkdir -p /etc/kubernetes/ssl/apiserver
-sudo mkdir -p /etc/kubernetes/ssl/kube-dns
 sudo mkdir -p /etc/kubernetes/ssl/kube-dashboard
-sudo mkdir -p /etc/flannel/
-sudo mkdir -p /etc/systemd/system/flanneld.service.d
+sudo mkdir -p /etc/kubernetes/ssl/kube-dns
 sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo mkdir -p /etc/systemd/system/etcd-member.service.d
+sudo mkdir -p /etc/systemd/system/flanneld.service.d
 sudo mkdir -p /opt/bin/
 mkdir -p ${KEYSDIR}
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/40-listen-address.conf  > /tmp/40-listen-address.conf 
-sudo mv /tmp/40-listen-address.conf  /etc/systemd/system/etcd2.service.d/40-listen-address.conf
+sudo mv /tmp/40-listen-address.conf  /etc/systemd/system/etcd-member.service.d/40-listen-address.conf
 
 echo "starting etcd..."
-sudo systemctl start etcd2
-sudo systemctl enable etcd2
+sudo systemctl start etcd-member
+sudo systemctl enable etcd-member
 
 
 echo "creating keys in ${KEYSDIR}"
@@ -81,7 +82,10 @@ sudo find /etc/kubernetes/ssl/ -name '*-key.pem' -exec chown root:root {} \; -ex
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/options.env  > /tmp/options.env
 sudo mv /tmp/options.env  /etc/flannel/
-sudo cp  files/40-ExecStartPre-symlink.conf /etc/systemd/system/flanneld.service.d/
+sudo cp files/40-ExecStartPre-symlink.conf /etc/systemd/system/flanneld.service.d/
+sudo cp files/40-flannel.conf /etc/systemd/system/docker.service.d/40-flannel.conf
+sudo cp files/docker_opts_cni.env /etc/kubernetes/cni/docker_opts_cni.env
+sudo cp files/10-flannel.conf /etc/kubernetes/cni/net.d/10-flannel.conf
 
 sed "s/__PUBLICIP__/${NODE_IP}/g" files/kubelet.service | sed "s/K8VERSION/${K8VERSION}/g" > /tmp/kubelet.service
 sudo mv /tmp/kubelet.service  /etc/systemd/system/
@@ -92,6 +96,7 @@ sudo mv /tmp/kube-apiserver.yml /etc/kubernetes/manifests/
 sudo cp files/kube-proxy.yml /etc/kubernetes/manifests/
 sudo cp files/kube-controller-manager.yml /etc/kubernetes/manifests/
 sudo cp files/kube-scheduler.yml /etc/kubernetes/manifests/
+sudo cp files/master-kubeconfig.yml /etc/kubernetes/master-kubeconfig.yml
 
 sudo systemctl daemon-reload
 
@@ -126,7 +131,7 @@ done
 set -x
 
 echo "install kubectl"
-curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.5.1/bin/linux/amd64/kubectl
+curl -s -O https://storage.googleapis.com/kubernetes-release/release/v1.10.5/bin/linux/amd64/kubectl
 sudo mv kubectl /opt/bin
 sudo chmod +x /opt/bin/kubectl
 
@@ -136,6 +141,8 @@ kubectl config set-credentials default-admin --certificate-authority=${KEYSDIR}/
 
 kubectl config set-context default-system --cluster=default-cluster --user=default-admin
 kubectl config use-context default-system
+kubectl patch node ${NODE_IP} -p "{\"spec\":{\"unschedulable\":false}}"
+kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user kube-admin
 kubectl create -f files/kube-dns.yml
 kubectl create -f files/kube-dashboard.yml
 kubectl get pods --all-namespaces
