@@ -1,24 +1,30 @@
 [Service]
 Environment=KUBELET_IMAGE_TAG=K8VERSION
 Environment="RKT_RUN_ARGS=--uuid-file-save=/var/run/kubelet-pod.uuid \
+  --volume cni1,kind=host,source=/etc/cni/net.d \
+  --mount volume=cni1,target=/etc/cni/net.d
+  --volume cni2,kind=host,source=/opt/cni/bin \
+  --mount volume=cni2,target=/opt/cni/bin
   --volume var-log,kind=host,source=/var/log \
   --mount volume=var-log,target=/var/log \
   --volume dns,kind=host,source=/etc/resolv.conf \
   --mount volume=dns,target=/etc/resolv.conf"
 ExecStartPre=/usr/bin/mkdir -p /etc/kubernetes/manifests
 ExecStartPre=/usr/bin/mkdir -p /var/log/containers
+ExecStartPre=/usr/bin/mkdir -p /var/lib/kubelet/volumeplugins
 ExecStartPre=-/usr/bin/rkt rm --uuid-file=/var/run/kubelet-pod.uuid
 ExecStart=/usr/lib/coreos/kubelet-wrapper \
-  --allow-privileged=true \
-  --cluster_dns=10.3.0.10 \
-  --cluster_domain=cluster.local
-  --cni-conf-dir=/etc/kubernetes/cni/net.d \
-  --container-runtime=docker \
-  --hostname-override=__PUBLICIP__ \
-  --kubeconfig=/etc/kubernetes/master-kubeconfig.yml \
-  --network-plugin=${NETWORK_PLUGIN} \
-  --pod-manifest-path=/etc/kubernetes/manifests \
   --register-schedulable=false \
+  --cni-conf-dir=/etc/kubernetes/cni/net.d \
+  --network-plugin=cni \
+  --container-runtime=docker \
+  --allow-privileged=true \
+  --pod-manifest-path=/etc/kubernetes/manifests \
+  --hostname-override=__PUBLICIP__ \
+  --cluster_dns=10.3.0.10 \
+  --kubeconfig=/etc/kubernetes/master-kubeconfig.yml \
+  --volume-plugin-dir=/var/lib/kubelet/volumeplugins \
+  --cluster_domain=cluster.local
 ExecStop=-/usr/bin/rkt stop --uuid-file=/var/run/kubelet-pod.uuid
 Restart=always
 RestartSec=10
